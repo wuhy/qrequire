@@ -1,0 +1,25 @@
+{
+  "name": "qrequire",
+  "version": "0.1.0",
+  "description": "Improve the speed of module rquire using cache",
+  "main": "index.js",
+  "keywords": ["require","node"],
+  "scripts": {
+    "test": "mocha test/tasks/*.spec.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wuhy/qrequire.git"
+  },
+  "bugs": {
+    "url": "http://github.com/wuhy/qrequire/issues"
+  },
+  "author": "sparklewhy@gmail.com",
+  "license": "ISC",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "expect.js": "^0.3.1",
+    "mocha": "^3.2.0"
+  }
+}
