@@ -12,7 +12,7 @@ qrequire
 ```shell
 npm install qrequire --save
 ```
-### How to use
+### Usage
 
 ```javasript
 var prquire = require('prequire');
