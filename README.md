@@ -19,7 +19,6 @@ var qrequire = require('qrequire');
 qrequire.hook();
 // require the module you wanna speed up
 qrequire.unhook();
-
 ```
 
 ### Limit
