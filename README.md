@@ -15,10 +15,10 @@ npm install qrequire --save
 ### Usage
 
 ```javasript
-var prquire = require('prequire');
-prequire.hook();
+var qrequire = require('qrequire');
+qrequire.hook();
 // require the module you wanna speed up
-prequire.unhook();
+qrequire.unhook();
 
 ```
 
