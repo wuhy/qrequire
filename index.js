@@ -39,7 +39,7 @@ function customRequire(modulePath) {
         skipCache = true;
     }
 
-    // XX: ignoring th situation that has the different version dependencies.
+    // XX: ignoring the situation that has the different version dependencies.
     if (!skipCache && cacheRequire[moduleId]) {
         return cacheRequire[moduleId];
     }

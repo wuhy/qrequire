@@ -17,7 +17,11 @@ npm install qrequire --save
 ```javasript
 var prquire = require('prequire');
 prequire.hook();
-// require the moudle you wanna speed up
+// require the module you wanna speed up
 prequire.unhook();
 
 ```
+
+### Limit
+
+Ignore the situation that has the different version dependencies.
