@@ -15,7 +15,8 @@ describe('qrequire', function () {
     it('should cache when hook', function () {
         qrequire.hook();
         var fs = require('fs');
-        expect(qrequire.getModule('fs')).to.be(fs);
+        expect(Object.keys(qrequire._cacheRequire)).to.eql(['fs']);
+        expect(qrequire.getModule('fs')[0]).to.be(fs);
         qrequire.unhook();
     });
 
@@ -24,8 +25,7 @@ describe('qrequire', function () {
         require('path');
         require('fs');
         qrequire.unhook();
-        expect(qrequire.getModule('path')).to.be(undefined);
-        expect(qrequire.getModule('fs')).to.be(undefined);
+        expect(qrequire._cacheRequire).to.be.empty();
     });
 
     it('should clear cache when clear cache', function () {
@@ -33,8 +33,7 @@ describe('qrequire', function () {
         require('path');
         require('fs');
         qrequire.clear();
-        expect(qrequire.getModule('path')).to.be(undefined);
-        expect(qrequire.getModule('fs')).to.be(undefined);
+        expect(qrequire._cacheRequire).to.be.empty();
         qrequire.unhook();
     });
 
@@ -43,25 +42,34 @@ describe('qrequire', function () {
         var id = path.join(__dirname, '..', 'fixtures', 'a');
         var a = require(id);
         expect(a).not.to.eql(null);
-        expect(qrequire.getModule(id)).to.be(undefined);
+        expect(qrequire._cacheRequire).to.be.empty();
 
         id = '../fixtures/b';
         var b = require(id);
         expect(b).not.to.eql(null);
-        expect(qrequire.getModule(id)).to.be(undefined);
+        expect(qrequire._cacheRequire).to.be.empty();
         qrequire.unhook();
     });
 
-    it('should return cache when exist duplicate modules require', function () {
+    it('should return different module when exist different version modules require', function () {
         qrequire.hook();
         var c = require('../fixtures/c');
-        expect(c).to.eql([ 'd:1.0', 'e:1.0' ]);
+        expect(c).to.eql([ 'd:1.0', 'e:2.0' ]);
 
         var d = require('../fixtures/d');
-        expect(d).to.eql([ 'd:1.0', 'e:1.0' ]);
+        expect(d).to.eql([ 'd:1.0', 'e:2.0' ]);
+        expect(qrequire.getModule('f').length).to.be(2);
         qrequire.unhook();
+    });
 
-        var e = require('../fixtures/d');
-        expect(d).to.eql([ 'd:1.0', 'e:1.0' ]);
+    it('should return cache module when exist same version modules require', function () {
+        qrequire.hook();
+        var result = require('../fixtures/same-require');
+        expect(result).to.eql([ 'e-h', 'e-h' ]);
+
+        expect(qrequire.getModule('h', '1.0.0')).to.be(
+            require(path.join(__dirname, '../fixtures/node_modules/h'))
+        );
+        qrequire.unhook();
     });
 });

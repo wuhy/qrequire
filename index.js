@@ -11,41 +11,111 @@ var originalRequire = Module.prototype.require;
 
 var cacheRequire = {};
 var dependencyDir = 'node_modules';
+var depenceDirLen = dependencyDir.length;
 var hooked = false;
+
+function getPkgDir(modulePath) {
+    modulePath = normalize(modulePath);
+    var index = modulePath.lastIndexOf(dependencyDir);
+    if (index !== -1) {
+        var parts = modulePath.substr(
+            index + depenceDirLen + 1
+        ).split('/');
+        return modulePath.substr(0, index + depenceDirLen + 1) + parts.shift();
+    }
+}
+
+function getModuleVersion(pkgDir) {
+    if (!pkgDir) {
+        return;
+    }
+
+    try {
+        var metaFile = originalRequire(path.join(pkgDir, 'package.json'));
+        return metaFile.version;
+    }
+    catch (ex) {
+    }
+}
+
+function resolveModule(modulePath, module) {
+    var resolvePath = Module._resolveFilename(modulePath, module);
+    var pkgDir = getPkgDir(resolvePath);
+    var version;
+    if (modulePath !== resolvePath && pkgDir) { // skip native module
+        version = getModuleVersion(pkgDir);
+    }
+
+    return {
+        resolvePath: resolvePath,
+        version: version,
+        pkgDir: pkgDir
+    };
+}
+
+function normalize(filePath) {
+    return filePath.replace(/\\/, '/');
+}
+
+function getCacheKey(moduleId, version) {
+    return moduleId + (version ? '@' + version : '');
+}
 
 function customRequire(modulePath) {
     var moduleId = modulePath;
-    var skipCache = false;
+    var ignoreCache = false;
+    var toRequireVersion;
+    var resolvePath;
 
     // resolve relative module id
     if (/^\./.test(modulePath)) {
-        var filename = this.filename.replace(/\\/, '/');
+        var filename = normalize(this.filename);
 
         var index = filename.lastIndexOf(dependencyDir);
         if (index !== -1) {
             var parts = filename.substr(
-                index + dependencyDir.length + 1
+                index + depenceDirLen + 1
             ).split('/');
             parts.pop();
-            moduleId = path.join(parts.join('/'), modulePath);
+
+            var modPkgDir = filename.substr(0, index + depenceDirLen + 1) + parts[0];
+            toRequireVersion = getModuleVersion(modPkgDir);
+
+            resolvePath = normalize(path.join(
+                filename.substr(0, filename.lastIndexOf('/')),
+                modulePath
+            ));
+            moduleId = normalize(path.join(
+                parts.join('/'),
+                modulePath
+            ));
         }
         else {
             // skip the module is not installed in `dependencyDir`
-            skipCache = true;
+            ignoreCache = true;
         }
     }
     else if (/^(\/|\w:)/.test(modulePath)) {
         // skip the absolute path module cache
-        skipCache = true;
+        ignoreCache = true;
+    }
+    else {
+        var resolveInfo = resolveModule(modulePath, this);
+        toRequireVersion = resolveInfo.version;
+        resolvePath = resolveInfo.resolvePath;
     }
 
-    // XX: ignoring the situation that has the different version dependencies.
-    if (!skipCache && cacheRequire[moduleId]) {
-        return cacheRequire[moduleId];
+    // XX: ignoring the situation that has the same version and module id
+    // with the different implementation.
+    var cacheKey = getCacheKey(moduleId, toRequireVersion);
+    if (!ignoreCache && cacheRequire[cacheKey]) {
+        return cacheRequire[cacheKey];
     }
 
-    var result = originalRequire.apply(this, arguments);
-    skipCache || (cacheRequire[moduleId] = result);
+    var result = originalRequire.call(this, resolvePath || modulePath);
+    if (!ignoreCache) {
+        cacheRequire[cacheKey] = result;
+    }
     return result;
 }
 
@@ -84,15 +154,41 @@ exports.unhook = function () {
  * clear module cache when hooking
  */
 exports.clear = function () {
-    cacheRequire = {};
+    exports._cacheRequire = cacheRequire = {};
 };
+
+exports._cacheRequire = cacheRequire;
 
 /**
  * get the module from the cache
  *
- * @param {string} id the normalize module id
- * @return {*}
+ * @param {string=} id the normalize module id
+ * @param {string=} version the version to get
+ * @return {?Array|?Object}
  */
-exports.getModule = function (id) {
-    return cacheRequire[id];
+exports.getModule = function (id, version) {
+    var result = [];
+    Object.keys(cacheRequire).some(function (item) {
+        var index = item.lastIndexOf('@');
+        var modId = item;
+        var currVersion;
+        if (index !== -1 && index !== 0) {
+            modId = item.substr(0, index);
+            currVersion = item.substr(index + 1);
+        }
+        if (modId === id && (!version || currVersion === version)) {
+            result.push(cacheRequire[item]);
+
+            if (version) {
+                return true;
+            }
+        }
+    });
+
+    if (result.length) {
+        return version ? result[0] : result;
+    }
+
+    return null;
 };
+
