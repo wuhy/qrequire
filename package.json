@@ -1,6 +1,6 @@
 {
   "name": "qrequire",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Improve the speed of module require using cache",
   "main": "index.js",
   "keywords": ["require","node"],
