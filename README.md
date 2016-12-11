@@ -23,4 +23,4 @@ qrequire.unhook();
 
 ### Limit
 
-Ignore the situation that has the different version dependencies.
+Ignore the situation that has the same version dependency with the different implementation.
